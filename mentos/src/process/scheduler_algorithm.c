@@ -19,7 +19,15 @@ task_struct *pick_next_task(runqueue_t *runqueue, time_t delta_exec)
 #if defined(SCHEDULER_RR)
 	//==== Implementatin of the Round-Robin Scheduling algorithm ============
 
+	// get the next node
+	list_head *nextNode = runqueue->curr->run_list.next;
 
+	// if the next node is head, get next node
+	if (nextNode == &(runqueue->queue))
+		nextNode = nextNode->next;
+
+	// get next task and return it
+	next = list_entry(nextNode, task_struct, run_list);
 
 	//=======================================================================
 #elif defined(SCHEDULER_PRIORITY)
@@ -31,7 +39,7 @@ task_struct *pick_next_task(runqueue_t *runqueue, time_t delta_exec)
 	// Get its static priority.
 	time_t min = /*...*/
 
-	list_head *it;
+		list_head * it;
 	// Inter over the runqueue to find the task with the smallest priority value
 	list_for_each (it, &runqueue->queue) {
 		task_struct *entry = list_entry(/*...*/);
@@ -49,12 +57,13 @@ task_struct *pick_next_task(runqueue_t *runqueue, time_t delta_exec)
 	// (use GET_WEIGHT macro!)
 	int weight = /*...*/
 
-	if (weight != NICE_0_LOAD) {
+		if (weight != NICE_0_LOAD)
+	{
 		// get the multiplicative factor for its delta_exec.
 		double factor = /*...*/
 
-		// weight the delta_exec with the multiplicative factor.
-		delta_exec = // ...
+			// weight the delta_exec with the multiplicative factor.
+			delta_exec = // ...
 	}
 
 	// Update vruntime of the current process.
@@ -67,7 +76,9 @@ task_struct *pick_next_task(runqueue_t *runqueue, time_t delta_exec)
 #else
 #error "You should enable a scheduling algorithm!"
 #endif
-	assert(next && "No valid task selected. Have you implemented a scheduling algorithm?");
+	assert(
+		next &&
+		"No valid task selected. Have you implemented a scheduling algorithm?");
 
 	return next;
 }
