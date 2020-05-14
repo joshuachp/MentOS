@@ -55,7 +55,7 @@ block_found:
 	// page_t of each free block of 2^order contiguous page frames.
 
 	// NOTE: &area->free_list.next not really sure why
-	page = list_entry(&area->free_list.next, page_t, lru);
+	page = list_entry(area->free_list.next, page_t, lru);
 
 	// Remove page from the list_head in the found free_area_t.
 	list_head_del(&page->lru);
@@ -78,6 +78,9 @@ block_found:
 	while (current_order > order) {
 		// At each loop, we have to set free the right half of the found block.
 
+		// get the previews block
+		current_order--;
+
 		// Split the block size in half
 		size = size >> 1;
 
@@ -88,7 +91,7 @@ block_found:
 		buddy->private = current_order;
 
 		// get the free_area_t collecting blocks with 2^(k-1) page frames
-		area = &zone->free_area[current_order - 1];
+		area = &zone->free_area[current_order];
 
 		// add the buddy block in its list of available blocks
 		list_head_add(&buddy->lru, &area->free_list);
