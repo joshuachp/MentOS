@@ -54,10 +54,11 @@ block_found:
 	// Here we have to manage pages. Recall, free_area_t collects the first
 	// page_t of each free block of 2^order contiguous page frames.
 
-	page = list_entry(&area->free_list, page_t, lru);
+	// NOTE: &area->free_list.next not really sure why
+	page = list_entry(&area->free_list.next, page_t, lru);
 
 	// Remove page from the list_head in the found free_area_t.
-	list_head_del(&area->free_list);
+	list_head_del(&page->lru);
 
 	// Set page as taken.
 	page->_count = 0;
@@ -90,7 +91,7 @@ block_found:
 		area = &zone->free_area[current_order - 1];
 
 		// add the buddy block in its list of available blocks
-		list_head_add(&area->free_list, &buddy->lru);
+		list_head_add(&buddy->lru, &area->free_list);
 
 		// Increase the number of free blocks of the free_area_t.
 		area->nr_free++;
@@ -123,14 +124,14 @@ void bb_free_pages(zone_t *zone, page_t *page, unsigned int order)
 		// they can be merged. Otherwise, we can stop the while-loop and insert
 		// page in the list of free blocks.
 
-		if (!(buddy->flags == -1 && buddy->private == order)) {
+		if (!(buddy->_count == -1 && buddy->private == order)) {
 			break;
 		}
 
 		// we are here only if buddy is free and can be merged with page.
 
 		// remove buddy from the list of available blocks in its free_area_t
-		list_head_del(&zone->free_area[order].free_list);
+		list_head_del(&buddy->lru);
 
 		// Decrease the number of free block of the current free_area_t.
 		zone->free_area[order].nr_free--;
@@ -139,10 +140,7 @@ void bb_free_pages(zone_t *zone, page_t *page, unsigned int order)
 		buddy->private = 0;
 
 		// Update the page index with the index of the coalesced block.
-		if (buddy_idx < page_idx) {
-			page_idx = buddy_idx;
-			page = buddy;
-		}
+		page_idx &= buddy_idx;
 
 		order++;
 	}
@@ -154,7 +152,7 @@ void bb_free_pages(zone_t *zone, page_t *page, unsigned int order)
 	coalesced->private = order;
 
 	// Insert the coalesced block in the free_area as available block
-	list_head_add(&zone->free_area[order].free_list, &coalesced->lru);
+	list_head_add(&coalesced->lru, &zone->free_area[order].free_list);
 
 	// Increase the number of free blocks of the free_area.
 	zone->free_area[order].nr_free++;
